@@ -1,0 +1,771 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Skin Inverter – Minecraft</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
+
+/* ── RESET ── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+/* ── PALETTE ── */
+:root {
+  --dirt:    #5a3e1b;
+  --grass:   #5d9e2f;
+  --grass2:  #3d7a1a;
+  --stone:   #8b8b8b;
+  --stone2:  #5f5f5f;
+  --wood:    #6b4a1e;
+  --sky:     #5b8dd9;
+  --bg:      #1a1209;
+  --panel:   #231a0d;
+  --border:  #3d2e12;
+  --border2: #5a4220;
+  --text:    #f0e6cc;
+  --muted:   #9e8060;
+  --green:   #5dfc6a;
+  --red:     #ff5555;
+  --pixel:   4px; /* pixel border thickness */
+}
+
+/* ── PIXELATED BORDER MIXIN (emulated via box-shadow) ── */
+
+body {
+  background-color: var(--bg);
+  background-image:
+    repeating-linear-gradient(0deg,   transparent, transparent 31px, #0d0a0444 32px),
+    repeating-linear-gradient(90deg,  transparent, transparent 31px, #0d0a0444 32px);
+  background-size: 32px 32px;
+  color: var(--text);
+  font-family: 'Press Start 2P', monospace;
+  font-size: 8px;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 24px 12px 40px;
+  line-height: 1.8;
+}
+
+/* ── PIXEL PANEL ── */
+.panel {
+  background: var(--panel);
+  border: 4px solid var(--border2);
+  box-shadow:
+    0 0 0 4px var(--border),
+    inset 0 0 0 2px #0005;
+  width: 100%;
+  max-width: 580px;
+  margin-bottom: 16px;
+  image-rendering: pixelated;
+}
+
+.panel-header {
+  background: var(--dirt);
+  border-bottom: 4px solid var(--border);
+  padding: 8px 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 7px;
+  color: var(--text);
+  text-shadow: 2px 2px 0 #0008;
+}
+
+.panel-header .dot {
+  width: 8px; height: 8px;
+  background: var(--border2);
+  display: inline-block;
+  image-rendering: pixelated;
+}
+
+.panel-body { padding: 14px; }
+
+/* ── HEADER ── */
+.mc-title {
+  text-align: center;
+  margin-bottom: 20px;
+}
+
+.mc-title h1 {
+  font-size: clamp(10px, 4vw, 18px);
+  color: #fff;
+  text-shadow:
+    3px 3px 0 #3c3c3c,
+    -1px -1px 0 #0006;
+  letter-spacing: 2px;
+  margin-bottom: 4px;
+}
+
+.mc-title h1 span { color: var(--grass); }
+
+.mc-title p {
+  color: var(--muted);
+  font-size: 7px;
+}
+
+/* ── GRASS DIVIDER ── */
+.grass-bar {
+  width: 100%;
+  max-width: 580px;
+  height: 16px;
+  background: linear-gradient(180deg, var(--grass) 0%, var(--grass) 50%, var(--grass2) 50%);
+  margin: -16px 0 0;
+  position: relative;
+}
+
+/* ── UPLOAD ZONE ── */
+.upload-zone {
+  border: 4px dashed var(--border2);
+  padding: 24px 12px;
+  text-align: center;
+  cursor: pointer;
+  position: relative;
+  transition: border-color 0.15s, background 0.15s;
+  background: #0d0a0444;
+}
+
+.upload-zone:hover, .upload-zone.drag-over {
+  border-color: var(--grass);
+  background: #5d9e2f11;
+}
+
+.upload-zone input {
+  position: absolute; inset: 0;
+  opacity: 0; cursor: pointer;
+  width: 100%; height: 100%;
+}
+
+.upload-zone .mc-icon {
+  display: block;
+  width: 32px; height: 32px;
+  margin: 0 auto 10px;
+  image-rendering: pixelated;
+  /* Steve head pixel art */
+  background:
+    /* hair row 1 */
+    linear-gradient(#5a3e1b,#5a3e1b) 0 0/8px 8px,
+    /* face row */
+    linear-gradient(#f0c080,#f0c080) 0 8px/32px 16px,
+    /* base */
+    linear-gradient(#5a3e1b,#5a3e1b) 0 24px/32px 8px;
+  box-shadow:
+    0 0 0 2px var(--border2);
+}
+
+.upload-zone p { color: var(--muted); font-size: 7px; }
+.upload-zone strong { color: var(--text); }
+.upload-zone .hint { font-size: 6px; color: var(--border2); margin-top: 4px; }
+
+/* ── MODE BUTTONS ── */
+.mode-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.mode-btn {
+  background: #0d0a04;
+  border: 3px solid var(--border);
+  color: var(--muted);
+  font-family: 'Press Start 2P', monospace;
+  font-size: 6px;
+  padding: 10px 6px;
+  cursor: pointer;
+  text-align: center;
+  line-height: 2;
+  transition: border-color 0.12s, color 0.12s, background 0.12s;
+  box-shadow: 0 3px 0 var(--border);
+  position: relative;
+  top: 0;
+}
+
+.mode-btn:hover {
+  border-color: var(--wood);
+  color: var(--text);
+  background: #1a1209;
+}
+
+.mode-btn.active {
+  border-color: var(--grass);
+  color: var(--grass);
+  background: #5d9e2f15;
+  box-shadow: 0 3px 0 var(--grass2);
+}
+
+.mode-btn .m-icon { font-size: 16px; display: block; margin-bottom: 4px; }
+.mode-btn .m-sub { font-size: 5px; color: var(--muted); display: block; margin-top: 2px; }
+.mode-btn.active .m-sub { color: var(--grass2); }
+
+/* ── PREVIEW ── */
+.preview-row {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  gap: 8px;
+  align-items: center;
+}
+
+.preview-label {
+  font-size: 6px;
+  color: var(--muted);
+  text-align: center;
+  margin-bottom: 6px;
+  text-transform: uppercase;
+}
+
+.canvas-wrap {
+  background:
+    repeating-conic-gradient(#1a1209 0% 25%, #231a0d 0% 50%)
+    0 0 / 8px 8px;
+  border: 3px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 72px;
+  padding: 4px;
+}
+
+canvas {
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+  max-width: 100%;
+}
+
+.placeholder {
+  color: var(--border2);
+  font-size: 6px;
+  text-align: center;
+  padding: 16px 4px;
+}
+
+.arrow-col {
+  text-align: center;
+  color: var(--grass);
+  font-size: 18px;
+  padding: 0 2px;
+}
+
+/* ── ACTION BUTTONS ── */
+.action-row {
+  display: flex;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.mc-btn {
+  flex: 1;
+  padding: 10px 6px;
+  font-family: 'Press Start 2P', monospace;
+  font-size: 7px;
+  border: none;
+  cursor: pointer;
+  position: relative;
+  top: 0;
+  transition: top 0.08s, box-shadow 0.08s;
+  letter-spacing: 0.5px;
+  text-shadow: 1px 2px 0 #0008;
+}
+
+.mc-btn:not(:disabled):active { top: 3px; }
+
+.mc-btn-green {
+  background: #5a9e2f;
+  color: #fff;
+  box-shadow: 0 4px 0 #2d5a10, inset 0 1px 0 #7fd150;
+  border: 2px solid #2d5a10;
+}
+.mc-btn-green:hover:not(:disabled) {
+  background: #6dbb38;
+}
+.mc-btn-green:not(:disabled):active {
+  box-shadow: 0 1px 0 #2d5a10, inset 0 1px 0 #7fd150;
+}
+
+.mc-btn-stone {
+  background: var(--stone2);
+  color: #ddd;
+  box-shadow: 0 4px 0 #333, inset 0 1px 0 #aaa;
+  border: 2px solid #333;
+}
+.mc-btn-stone:hover:not(:disabled) {
+  background: #777;
+}
+.mc-btn-stone:not(:disabled):active {
+  box-shadow: 0 1px 0 #333, inset 0 1px 0 #aaa;
+}
+
+.mc-btn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+  box-shadow: none !important;
+  top: 0 !important;
+}
+
+/* ── STATUS BAR ── */
+.status-bar {
+  background: #0d0a04;
+  border: 3px solid var(--border);
+  border-top: none;
+  padding: 6px 10px;
+  font-size: 6px;
+  color: var(--muted);
+  min-height: 24px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.status-bar::before {
+  content: '▶';
+  color: var(--border2);
+  flex-shrink: 0;
+}
+
+.status-bar.ok { color: var(--grass); }
+.status-bar.ok::before { color: var(--grass2); }
+.status-bar.err { color: var(--red); }
+.status-bar.err::before { color: #aa1111; }
+
+/* ── INFO BLOCK ── */
+.mc-info {
+  background: #231a0d;
+  border: 3px solid var(--border);
+  padding: 10px 12px;
+  font-size: 6px;
+  color: var(--muted);
+  line-height: 2.2;
+  max-width: 580px;
+  width: 100%;
+}
+
+.mc-info strong { color: var(--grass); }
+
+/* ── SKIN MAP DIAGRAM ── */
+.skin-map {
+  display: block;
+  margin: 10px auto 0;
+  image-rendering: pixelated;
+  width: 160px;
+  height: 80px;
+}
+
+/* ── SCROLLBAR ── */
+::-webkit-scrollbar { width: 8px; }
+::-webkit-scrollbar-track { background: var(--bg); }
+::-webkit-scrollbar-thumb { background: var(--border2); }
+</style>
+</head>
+<body>
+
+<div class="mc-title">
+  <h1>⚔ SKIN <span>INVERTER</span></h1>
+  <p>Inverta frente/costas da sua skin do Minecraft</p>
+</div>
+
+<!-- UPLOAD -->
+<div class="panel">
+  <div class="panel-header">
+    <span class="dot"></span><span class="dot"></span><span class="dot"></span>
+    &nbsp;CARREGAR SKIN
+  </div>
+  <div class="panel-body">
+    <div class="upload-zone" id="dropZone">
+      <input type="file" id="fileInput" accept=".png,image/png">
+      <span class="mc-icon"></span>
+      <p><strong>Clique ou arraste sua skin aqui</strong></p>
+      <p class="hint">PNG · 64×64 (novo) ou 64×32 (legado)</p>
+    </div>
+  </div>
+</div>
+
+<!-- MODE -->
+<div class="panel">
+  <div class="panel-header">
+    <span class="dot"></span><span class="dot"></span><span class="dot"></span>
+    &nbsp;TIPO DE INVERSÃO
+  </div>
+  <div class="panel-body">
+    <div class="mode-grid">
+      <button class="mode-btn active" data-mode="front-back">
+        <span class="m-icon">🔁</span>
+        FRENTE ↔ COSTAS
+        <span class="m-sub">Inverte corpo inteiro<br>(cabeça + torso + braços + pernas)</span>
+      </button>
+      <button class="mode-btn" data-mode="head-only">
+        <span class="m-icon">🪖</span>
+        SÓ A CABEÇA
+        <span class="m-sub">Rosto ↔ Nuca</span>
+      </button>
+      <button class="mode-btn" data-mode="mirror-h">
+        <span class="m-icon">↔</span>
+        ESPELHAR H
+        <span class="m-sub">Toda a skin espelhada<br>horizontalmente</span>
+      </button>
+      <button class="mode-btn" data-mode="mirror-v">
+        <span class="m-icon">↕</span>
+        ESPELHAR V
+        <span class="m-sub">Toda a skin espelhada<br>verticalmente</span>
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- PREVIEW + ACTIONS -->
+<div class="panel">
+  <div class="panel-header">
+    <span class="dot"></span><span class="dot"></span><span class="dot"></span>
+    &nbsp;PREVIEW
+  </div>
+  <div class="panel-body">
+    <div class="preview-row">
+      <div>
+        <div class="preview-label">Original</div>
+        <div class="canvas-wrap">
+          <canvas id="canvasOrig" style="display:none"></canvas>
+          <div class="placeholder" id="phOrig">Sem skin</div>
+        </div>
+      </div>
+      <div class="arrow-col">➜</div>
+      <div>
+        <div class="preview-label">Resultado</div>
+        <div class="canvas-wrap">
+          <canvas id="canvasResult" style="display:none"></canvas>
+          <div class="placeholder" id="phResult">Aguardando</div>
+        </div>
+      </div>
+    </div>
+    <div class="action-row">
+      <button class="mc-btn mc-btn-green" id="btnInvert" disabled>⚙ INVERTER</button>
+      <button class="mc-btn mc-btn-stone" id="btnDownload" disabled>⬇ BAIXAR PNG</button>
+    </div>
+  </div>
+  <div class="status-bar" id="status">Carregue uma skin para começar</div>
+</div>
+
+<div class="mc-info">
+  <strong>COMO FUNCIONA — MAPA DE SKIN 64×64</strong><br>
+  O Minecraft usa um mapa UV fixo. Este inversor troca as faces certas:<br><br>
+  Cabeça · frente (8-15,8-15) ↔ costas (24-31,8-15)<br>
+  Torso · frente (20-27,20-31) ↔ costas (32-39,20-31)<br>
+  Braço D · frente (44-47,20-31) ↔ costas (52-55,20-31)<br>
+  Braço E · frente (36-39,52-63) ↔ costas (44-47,52-63)<br>
+  Perna D · frente (4-7,20-31) ↔ costas (12-15,20-31)<br>
+  Perna E · frente (20-23,52-63) ↔ costas (28-31,52-63)<br><br>
+  <strong>Laterais e topo/base são preservados.</strong>
+</div>
+
+<!-- Hidden work canvas -->
+<canvas id="canvasWork" style="display:none"></canvas>
+
+<script>
+// ─── DOM refs ───
+const fileInput    = document.getElementById('fileInput');
+const dropZone     = document.getElementById('dropZone');
+const canvasOrig   = document.getElementById('canvasOrig');
+const canvasResult = document.getElementById('canvasResult');
+const canvasWork   = document.getElementById('canvasWork');
+const btnInvert    = document.getElementById('btnInvert');
+const btnDownload  = document.getElementById('btnDownload');
+const statusEl     = document.getElementById('status');
+const phOrig       = document.getElementById('phOrig');
+const phResult     = document.getElementById('phResult');
+
+let currentMode = 'front-back';
+let loadedImg   = null;
+
+// ─── Mode selector ───
+document.querySelectorAll('.mode-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    currentMode = btn.dataset.mode;
+  });
+});
+
+// ─── Drag & Drop ───
+dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('drag-over'); });
+dropZone.addEventListener('dragleave', () => dropZone.classList.remove('drag-over'));
+dropZone.addEventListener('drop', e => {
+  e.preventDefault();
+  dropZone.classList.remove('drag-over');
+  const f = e.dataTransfer.files[0];
+  if (f) handleFile(f);
+});
+fileInput.addEventListener('change', () => { if (fileInput.files[0]) handleFile(fileInput.files[0]); });
+
+// ─── File handler ───
+function handleFile(file) {
+  if (!file.type.includes('png')) { setStatus('Apenas arquivos PNG!', 'err'); return; }
+  const reader = new FileReader();
+  reader.onload = ev => {
+    const img = new Image();
+    img.onload = () => {
+      if (img.width !== 64 || (img.height !== 64 && img.height !== 32)) {
+        setStatus('Skin inválida! Deve ser 64×64 ou 64×32px.', 'err');
+        return;
+      }
+      loadedImg = img;
+      drawToCanvas(canvasOrig, img);
+      canvasOrig.style.display = 'block';
+      phOrig.style.display = 'none';
+      canvasResult.style.display = 'none';
+      phResult.style.display = 'block';
+      phResult.textContent = 'Clique em Inverter';
+      btnInvert.disabled = false;
+      btnDownload.disabled = true;
+      setStatus(`Skin carregada! ${img.width}×${img.height}px`, 'ok');
+    };
+    img.src = ev.target.result;
+  };
+  reader.readAsDataURL(file);
+}
+
+function drawToCanvas(cvs, img) {
+  cvs.width  = img.width;
+  cvs.height = img.height;
+  const scale = Math.max(1, Math.floor(120 / Math.max(img.width, img.height)));
+  cvs.style.width  = (img.width  * scale) + 'px';
+  cvs.style.height = (img.height * scale) + 'px';
+  cvs.getContext('2d').drawImage(img, 0, 0);
+}
+
+// ─── Invert ───
+btnInvert.addEventListener('click', doInvert);
+
+function doInvert() {
+  if (!loadedImg) return;
+  const W = loadedImg.width, H = loadedImg.height;
+
+  // Read source pixels
+  canvasWork.width = W; canvasWork.height = H;
+  const wCtx = canvasWork.getContext('2d');
+  wCtx.clearRect(0, 0, W, H);
+  wCtx.drawImage(loadedImg, 0, 0);
+  const src = wCtx.getImageData(0, 0, W, H).data;
+
+  // Create output buffer (start as copy)
+  const out = new Uint8ClampedArray(src);
+
+  // ── Helpers ──
+  function px(buf, x, y) {
+    const i = (y * W + x) * 4;
+    return [buf[i], buf[i+1], buf[i+2], buf[i+3]];
+  }
+  function setPx(buf, x, y, c) {
+    const i = (y * W + x) * 4;
+    buf[i]=c[0]; buf[i+1]=c[1]; buf[i+2]=c[2]; buf[i+3]=c[3];
+  }
+  function swapRect(x1,y1, x2,y2, w,h) {
+    for (let dy=0; dy<h; dy++) for (let dx=0; dx<w; dx++) {
+      const a = px(src, x1+dx, y1+dy);
+      const b = px(src, x2+dx, y2+dy);
+      setPx(out, x1+dx, y1+dy, b);
+      setPx(out, x2+dx, y2+dy, a);
+    }
+  }
+  function flipH_rect(x,y,w,h) {
+    // horizontal mirror within rectangle
+    for (let dy=0; dy<h; dy++) for (let dx=0; dx<Math.floor(w/2); dx++) {
+      const a = px(out, x+dx,       y+dy);
+      const b = px(out, x+w-1-dx,   y+dy);
+      setPx(out, x+dx,     y+dy, b);
+      setPx(out, x+w-1-dx, y+dy, a);
+    }
+  }
+  function flipV_rect(x,y,w,h) {
+    for (let dy=0; dy<Math.floor(h/2); dy++) for (let dx=0; dx<w; dx++) {
+      const a = px(out, x+dx, y+dy);
+      const b = px(out, x+dx, y+h-1-dy);
+      setPx(out, x+dx, y+dy,     b);
+      setPx(out, x+dx, y+h-1-dy, a);
+    }
+  }
+
+  if (currentMode === 'mirror-h') {
+    // Mirror whole texture horizontally
+    for (let y=0; y<H; y++) for (let x=0; x<Math.floor(W/2); x++) {
+      const a=px(src,x,y), b=px(src,W-1-x,y);
+      setPx(out,x,y,b); setPx(out,W-1-x,y,a);
+    }
+
+  } else if (currentMode === 'mirror-v') {
+    for (let y=0; y<Math.floor(H/2); y++) for (let x=0; x<W; x++) {
+      const a=px(src,x,y), b=px(src,x,H-1-y);
+      setPx(out,x,y,b); setPx(out,x,H-1-y,a);
+    }
+
+  } else if (currentMode === 'head-only') {
+    // Swap head front face ↔ head back face
+    // front: x=8-15, y=8-15  |  back: x=24-31, y=8-15
+    swapRect(8,8, 24,8, 8,8);
+    // Also mirror each face horizontally so left=left after swap
+    flipH_rect(8,8,8,8);
+    flipH_rect(24,8,8,8);
+    // Second layer (hat) if 64×64
+    if (H===64) {
+      swapRect(40,8, 56,8, 8,8);
+      flipH_rect(40,8,8,8);
+      flipH_rect(56,8,8,8);
+    }
+
+  } else {
+    // ── front-back: full body swap ──
+    // Minecraft 64×64 UV layout:
+    //
+    // HEAD (row 0)
+    //   top:    x=8-15,  y=0-7
+    //   bottom: x=16-23, y=0-7
+    //   right:  x=0-7,   y=8-15
+    //   front:  x=8-15,  y=8-15   ← swap
+    //   left:   x=16-23, y=8-15
+    //   back:   x=24-31, y=8-15   ← swap
+    //
+    // HEAD OVERLAY (hat)
+    //   right:  x=32-39, y=8-15
+    //   front:  x=40-47, y=8-15   ← swap
+    //   left:   x=48-55, y=8-15
+    //   back:   x=56-63, y=8-15   ← swap
+    //
+    // BODY (row 1)
+    //   top:    x=20-27, y=16-19
+    //   bottom: x=28-35, y=16-19
+    //   right:  x=16-19, y=20-31
+    //   front:  x=20-27, y=20-31  ← swap
+    //   left:   x=28-31, y=20-31
+    //   back:   x=32-39, y=20-31  ← swap
+    //
+    // RIGHT ARM (row 1, arm section)
+    //   top:    x=44-47, y=16-19
+    //   bottom: x=48-51, y=16-19
+    //   right:  x=40-43, y=20-31
+    //   front:  x=44-47, y=20-31  ← swap
+    //   left:   x=48-51, y=20-31
+    //   back:   x=52-55, y=20-31  ← swap
+    //
+    // LEFT ARM (row 3 – 64×64 only)
+    //   top:    x=36-39, y=48-51
+    //   bottom: x=40-43, y=48-51
+    //   right:  x=32-35, y=52-63
+    //   front:  x=36-39, y=52-63  ← swap
+    //   left:   x=40-43, y=52-63
+    //   back:   x=44-47, y=52-63  ← swap
+    //
+    // RIGHT LEG (row 1)
+    //   right:  x=0-3,   y=20-31
+    //   front:  x=4-7,   y=20-31  ← swap
+    //   left:   x=8-11,  y=20-31
+    //   back:   x=12-15, y=20-31  ← swap
+    //
+    // LEFT LEG (row 3 – 64×64 only)
+    //   right:  x=16-19, y=52-63
+    //   front:  x=20-23, y=52-63  ← swap
+    //   left:   x=24-27, y=52-63
+    //   back:   x=28-31, y=52-63  ← swap
+
+    // HEAD
+    swapRect(8,8,  24,8,  8,8);
+    flipH_rect(8,8,8,8); flipH_rect(24,8,8,8);
+
+    // BODY
+    swapRect(20,20, 32,20, 8,12);
+    flipH_rect(20,20,8,12); flipH_rect(32,20,8,12);
+
+    // RIGHT ARM
+    swapRect(44,20, 52,20, 4,12);
+    flipH_rect(44,20,4,12); flipH_rect(52,20,4,12);
+
+    // RIGHT LEG
+    swapRect(4,20, 12,20, 4,12);
+    flipH_rect(4,20,4,12); flipH_rect(12,20,4,12);
+
+    if (H === 64) {
+      // HEAD OVERLAY (hat layer)
+      swapRect(40,8, 56,8, 8,8);
+      flipH_rect(40,8,8,8); flipH_rect(56,8,8,8);
+
+      // LEFT ARM
+      swapRect(36,52, 44,52, 4,12);
+      flipH_rect(36,52,4,12); flipH_rect(44,52,4,12);
+
+      // LEFT LEG
+      swapRect(20,52, 28,52, 4,12);
+      flipH_rect(20,52,4,12); flipH_rect(28,52,4,12);
+
+      // BODY OVERLAY
+      swapRect(20,36, 32,36, 8,12);
+      flipH_rect(20,36,8,12); flipH_rect(32,36,8,12);
+
+      // RIGHT ARM OVERLAY
+      swapRect(44,36, 52,36, 4,12);
+      flipH_rect(44,36,4,12); flipH_rect(52,36,4,12);
+
+      // LEFT ARM OVERLAY
+      swapRect(52,52, 60,52, 4,12);
+      flipH_rect(52,52,4,12); flipH_rect(60,52,4,12);
+
+      // RIGHT LEG OVERLAY
+      swapRect(4,36, 12,36, 4,12);
+      flipH_rect(4,36,4,12); flipH_rect(12,36,4,12);
+
+      // LEFT LEG OVERLAY
+      swapRect(4,52, 12,52, 4,12);
+      flipH_rect(4,52,4,12); flipH_rect(12,52,4,12);
+    }
+  }
+
+  // Draw result
+  canvasResult.width = W; canvasResult.height = H;
+  const scale = Math.max(1, Math.floor(120 / Math.max(W, H)));
+  canvasResult.style.width  = (W * scale) + 'px';
+  canvasResult.style.height = (H * scale) + 'px';
+  const rCtx = canvasResult.getContext('2d');
+  rCtx.putImageData(new ImageData(out, W, H), 0, 0);
+  canvasResult.style.display = 'block';
+  phResult.style.display = 'none';
+  btnDownload.disabled = false;
+
+  const modeNames = {
+    'front-back': 'Frente ↔ Costas (corpo inteiro)',
+    'head-only':  'Rosto ↔ Nuca',
+    'mirror-h':   'Espelhado horizontalmente',
+    'mirror-v':   'Espelhado verticalmente',
+  };
+  setStatus(`✔ ${modeNames[currentMode]} aplicado!`, 'ok');
+}
+
+// ─── Download ───
+btnDownload.addEventListener('click', () => {
+  if (canvasResult.style.display === 'none') return;
+  const W = canvasResult.width, H = canvasResult.height;
+
+  // Build a clean offscreen canvas at exact 64×64 or 64×32
+  const off = document.createElement('canvas');
+  off.width = W; off.height = H;
+  const ctx = off.getContext('2d');
+  // Draw from result canvas pixel-perfectly
+  ctx.drawImage(canvasResult, 0, 0, W, H);
+
+  // Convert to blob and trigger save
+  off.toBlob(blob => {
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'skin-invertida.png';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+    setStatus('Download concluído!', 'ok');
+  }, 'image/png');
+});
+
+// ─── Status ───
+function setStatus(msg, type) {
+  statusEl.textContent = msg;
+  statusEl.className = 'status-bar' + (type ? ' ' + type : '');
+}
+</script>
+</body>
+</html>
